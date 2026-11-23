@@ -30,11 +30,14 @@ ALIASES = {
     'io.github.keepassxcagentaccess.Tray': 'nightfall-keeper',
     'io.local.MacBookThermals': 'nightfall-thermals', 'piavpn': 'piavpn',
     'keepassxc_keepassxc': 'nightfall-keepassxc', 'net.nokyan.Resources': 'nightfall-resources',
+    'net.nokyan.Resources.Devel': 'nightfall-custom-resources',
     'pycharm-community_pycharm-community': 'nightfall-pycharm',
+    'pycharm_pycharm': 'nightfall-pycharm',
     'org.gnome.Nautilus': 'org.gnome.Nautilus',
 }
-for icon in (ASSETS / 'icons/scalable/apps').glob('nightfall-*_*.png'):
-    ALIASES[icon.stem.removeprefix('nightfall-')] = icon.stem
+for icon in (ASSETS / 'icons/scalable/apps').glob('nightfall-*_*.*'):
+    if icon.suffix in {'.png', '.svg'}:
+        ALIASES[icon.stem.removeprefix('nightfall-')] = icon.stem
 
 
 def run(*command):
