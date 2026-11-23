@@ -1,0 +1,24 @@
+/* MacBook Graphite Twill start */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --accent-bg-color: #a12c40;
+        --accent-fg-color: #faeff2;
+        --accent-color: #ea8796;
+    }
+}
+/* MacBook Graphite Twill end */
+
+/* Nightfall context menus begin */
+/* Right-click and standard popover menus in Files and GTK4 applications. */
+@media (prefers-color-scheme: dark) and (not (prefers-contrast: more)) {
+  popover.menu > contents, popover.context-menu > contents {
+    background-color: #211b20; color: #f6e9e9; border: 2px solid #794752;
+  }
+  popover.menu modelbutton:hover, popover.menu modelbutton:selected,
+  popover.menu modelbutton:focus-visible {
+    background-color: #603342; color: #fff4f0;
+  }
+  popover.menu modelbutton:disabled { color: #b5a4aa; }
+  popover.menu separator, popover.context-menu separator { background-color: #794752; }
+}
+/* Nightfall context menus end */

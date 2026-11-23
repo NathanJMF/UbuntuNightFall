@@ -1,0 +1,35 @@
+/* Nightfall for GNOME Settings, with the upstream dark-panel rules. */
+@import url("resource:///org/gnome/control-center/wellbeing/wellbeing-dark.css");
+
+@media (prefers-color-scheme: dark) and (not (prefers-contrast: more)) {
+  :root {
+    --window-bg-color: #191619;
+    --window-fg-color: #f6e9e9;
+    --view-bg-color: #201b1f;
+    --view-fg-color: #f6e9e9;
+    --sidebar-bg-color: #211b20;
+    --sidebar-backdrop-color: #201b1f;
+    --sidebar-fg-color: #f3e3e4;
+    --secondary-sidebar-bg-color: #292127;
+    --headerbar-bg-color: #231c21;
+    --headerbar-backdrop-color: #211c20;
+    --headerbar-fg-color: #f6e9e9;
+    --card-bg-color: #30262b;
+    --card-fg-color: #f6e9e9;
+    --dialog-bg-color: #281f25;
+    --dialog-fg-color: #f6e9e9;
+    --popover-bg-color: #30242a;
+    --popover-fg-color: #f6e9e9;
+    --accent-bg-color: #a12c40;
+    --accent-color: #ef929c;
+    --accent-fg-color: #fff5f4;
+  }
+  .navigation-sidebar row:selected {
+    background-color: #56303a;
+    color: #ffe7e6;
+    box-shadow: inset 0 -1px #75434e;
+  }
+  .navigation-sidebar row:selected image { color: #f58a85; }
+  .boxed-list { outline: 1px solid color-mix(in srgb, #ba828e 16%, transparent); }
+  switch:checked { background-color: #a12c40; }
+}

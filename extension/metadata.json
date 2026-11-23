@@ -1,0 +1,9 @@
+{
+  "uuid": "nightfall-popups@ubuntu-nightfall.local",
+  "name": "Nightfall Popups",
+  "description": "Nightfall calendar, notifications and Quick Settings.",
+  "shell-version": [
+    "50"
+  ],
+  "version": 1
+}

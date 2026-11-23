@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+[ -d /usr/share/gdm/dconf ] || exit 0
+picture=/usr/local/share/backgrounds/ubuntu-nightfall-greeter.png
+config=/usr/share/gdm/dconf/97-ubuntu-nightfall
+tmp=$(mktemp -d)
+trap 'rm -rf -- "$tmp"' EXIT
+cat > "$tmp/greeter" <<EOF
+[com/ubuntu/login-screen]
+background-picture-uri='file://$picture'
+background-color='#181719'
+background-size='cover'
+background-repeat='no-repeat'
+
+[org/gnome/desktop/interface]
+accent-color='red'
+color-scheme='prefer-dark'
+EOF
+case "$1" in
+    install)
+        for target in "$picture" "$config"; do
+            if [ -L "$target" ]; then echo "Preserving existing link $target" >&2; exit 1; fi
+        done
+        if [ -e "$config" ] && ! cmp -s "$tmp/greeter" "$config"; then
+            echo "Preserving existing greeter configuration $config" >&2; exit 1
+        fi
+        if [ -e "$picture" ] && ! cmp -s assets/wallpapers/greeter.png "$picture"; then
+            echo "Preserving existing greeter image $picture" >&2; exit 1
+        fi
+        sudo install -Dm0644 assets/wallpapers/greeter.png "$picture"
+        sudo install -m0644 "$tmp/greeter" "$config" ;;
+    restore)
+        [ -f "$config" ] || exit 0
+        cmp -s "$tmp/greeter" "$config" || { echo 'The greeter configuration was edited; leaving it in place.' >&2; exit 1; }
+        sudo rm -- "$config"
+        if cmp -s assets/wallpapers/greeter.png "$picture"; then sudo rm -- "$picture"; fi ;;
+    *) exit 2 ;;
+esac
+dconf compile "$tmp/defaults" /usr/share/gdm/dconf
+sudo install -m0644 "$tmp/defaults" /var/lib/gdm3/greeter-dconf-defaults

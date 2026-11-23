@@ -1,0 +1,36 @@
+/* MacBook Graphite Twill start */
+@define-color theme_selected_bg_color #a12c40;
+@define-color theme_selected_fg_color #faeff2;
+button.suggested-action:not(:disabled), switch:checked:not(:disabled),
+scale highlight, progressbar progress, selection {
+    background-image: none;
+    background-color: #a12c40;
+    color: #faeff2;
+}
+button.suggested-action:hover:not(:disabled) { background-color: #b3374c; }
+/* MacBook Graphite Twill end */
+
+/* Nightfall surfaces begin */
+/* Ubuntu's GTK3 system-problem prompt uses a standard message dialog. */
+messagedialog.background { color: #f6e9e9; background-color: #211b20; }
+messagedialog .dialog-action-area button, messagedialog .dialog-action-box button {
+  color: #faeff2; background-image: none; background-color: #45303a; border-color: #704653;
+}
+messagedialog button:hover { background-image: none; background-color: #603847; }
+messagedialog button:focus { outline-color: #f5989a; }
+messagedialog button.default { color: #fff5f4; background-image: none; background-color: #9b3045; }
+/* Nightfall surfaces end */
+
+/* Nightfall context menus begin */
+/* Right-click menus in Desktop Icons and GTK3 applications. */
+menu, .context-menu {
+  background-color: #211b20; background-image: none; color: #f6e9e9;
+  border: 2px solid #794752;
+}
+menu menuitem { color: #f6e9e9; }
+menu menuitem:hover, menu menuitem:selected {
+  background-color: #603342; background-image: none; color: #fff4f0;
+}
+menu menuitem:disabled { color: #b5a4aa; }
+menu separator { background-color: #794752; }
+/* Nightfall context menus end */

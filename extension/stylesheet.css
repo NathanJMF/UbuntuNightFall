@@ -1,0 +1,130 @@
+/* Use the thermal selector’s muted ruby around each popup. */
+.popup-menu-content, .quick-toggle-menu, .modal-dialog.prompt-dialog {
+  border: 2px solid #794752;
+}
+
+/* Shell context menus used by tray indicators and taskbar applications. */
+.popup-menu-content {
+  color: #f6e9e9; background-color: #211b20;
+}
+.popup-menu-content .popup-menu-item { color: #f6e9e9; }
+.popup-menu-content .popup-menu-item:hover,
+.popup-menu-content .popup-menu-item:focus,
+.popup-menu-content .popup-menu-item:active { background-color: #603342; color: #fff4f0; }
+.popup-menu-content .popup-menu-item:insensitive { color: #b5a4aa; }
+.popup-menu-content .popup-sub-menu { background-color: #2e2329; }
+.popup-menu-content .popup-separator-menu-item-separator,
+.quick-toggle-menu .popup-separator-menu-item-separator,
+.quick-settings .quick-toggle-has-menu .quick-toggle-separator,
+.quick-settings .quick-toggle-has-menu:checked .quick-toggle-separator { background-color: #794752; }
+.popup-menu-content .popup-menu-ornament { color: #f49a99; }
+
+/* Nightfall surfaces for the clock and Quick Settings menus. */
+.quick-settings {
+  color: #f6e9e9; background-color: #1a1619;
+}
+.quick-settings .quick-toggle,
+.quick-settings .quick-toggle-has-menu, .quick-settings .quick-toggle-menu-button,
+.quick-settings .icon-button, .quick-settings .power-item, .quick-toggle-menu {
+  color: #f6e9e9; background-color: #30252b;
+}
+.quick-settings .quick-toggle:hover, .quick-settings .quick-toggle-menu-button:hover,
+.quick-settings .icon-button:hover, .quick-toggle-menu .popup-menu-item:focus,
+.quick-toggle-menu .popup-menu-item:hover { background-color: #4d313b; color: #fff5f1; }
+.quick-settings .quick-toggle:checked, .quick-settings .quick-toggle-has-menu:checked,
+.quick-settings .quick-toggle-has-menu:checked .quick-toggle,
+.quick-settings .quick-toggle-has-menu:checked .quick-toggle-menu-button {
+  background-color: #963346; color: #fff5f1;
+}
+.quick-settings .quick-toggle:checked:hover,
+.quick-settings .quick-toggle-has-menu:checked .quick-toggle:hover,
+.quick-settings .quick-toggle-has-menu:checked .quick-toggle-menu-button:hover {
+  background-color: #ac4052; color: #fff5f1;
+}
+.quick-settings .quick-toggle:insensitive, .quick-settings .quick-toggle-menu-button:insensitive {
+  background-color: #30282d; color: #b8a6ac;
+}
+.quick-settings .slider, .quick-toggle-menu .slider {
+  color: #ffe1d8; -barlevel-background-color: #513a43;
+  -barlevel-active-background-color: #d76364;
+}
+/* Clock menu: one charcoal surface, with ruby reserved for the date and focus. */
+.datemenu-popover {
+  color: #f2eded; background-color: #181719;
+  border-radius: 19px;
+}
+.datemenu-popover #calendarArea { padding: 8px; }
+.datemenu-popover .message-list { border-color: #794752; }
+.datemenu-popover .message-list-placeholder { color: #b6aeb2; }
+.datemenu-popover .message-list-placeholder > StIcon { icon-size: 38px; color: #93848b; }
+.datemenu-popover .datemenu-today-button { padding: 6px 10px; border-radius: 8px; }
+.datemenu-popover .day-label { color: #e0878c; font-weight: 600; }
+.datemenu-popover .date-label { color: #faf5f4; font-size: 1.15em; font-weight: 700; }
+.datemenu-popover .calendar { background-color: transparent; padding: 0 3px; }
+.datemenu-popover .calendar-month-label { color: #f3ebeb; }
+.datemenu-popover .calendar-day-heading { color: #c6b6bc; }
+.datemenu-popover .calendar .calendar-day {
+  height: 2.65em; width: 2.65em; border-radius: 999px;
+  background-color: transparent; color: #f0e9e9; border: 1px solid transparent;
+}
+.datemenu-popover .calendar .calendar-day.calendar-weekend { color: #cfbdc4; }
+.datemenu-popover .calendar .calendar-day.calendar-other-month { color: #978e94; }
+.datemenu-popover .calendar .calendar-day:hover { background-color: #3b3036; }
+.datemenu-popover .calendar .calendar-day:selected { background-color: #463137; border-color: #d58692; color: #fff8f7; }
+.datemenu-popover .calendar .calendar-day.calendar-today { background-color: #a2384c; color: #fff9f8; font-weight: 700; }
+.datemenu-popover .calendar .calendar-day:focus { border-color: #f3bcc2; }
+.datemenu-popover .calendar-month-header .pager-button { background-color: transparent; color: #d9ced1; }
+.datemenu-popover .calendar-month-header .pager-button:hover,
+.datemenu-popover .datemenu-today-button:hover { background-color: #322b30; }
+.datemenu-popover .calendar-month-header .pager-button:focus,
+.datemenu-popover .datemenu-today-button:focus { box-shadow: inset 0 0 0 1px #d58692; }
+.datemenu-popover .events-button, .datemenu-popover .world-clocks-button,
+.datemenu-popover .weather-button, .datemenu-popover .message-list-controls .button {
+  color: #e7dddf; background-color: #272326; border-radius: 10px;
+}
+.datemenu-popover .events-button:hover, .datemenu-popover .world-clocks-button:hover,
+.datemenu-popover .weather-button:hover, .datemenu-popover .message-list-controls .button:hover { background-color: #383036; }
+.datemenu-popover .message-list-controls .button:insensitive { color: #afa5aa; background-color: #211e21; }
+
+/* Each exposed lip of a collapsed group gets its own fill and edge. */
+.datemenu-popover .message-view .message {
+  background-color: #383034; color: #f7f1f1; border: 1px solid #74616a;
+  border-radius: 13px; box-shadow: none;
+}
+.datemenu-popover .message-view .message:hover { background-color: #43383d; }
+.datemenu-popover .message-view .message:second-in-stack {
+  background-color: #4d4047; border-color: #8c777f; box-shadow: none;
+}
+.datemenu-popover .message-view .message:lower-in-stack {
+  background-color: #2b262a; border-color: #695b63; box-shadow: none;
+}
+.datemenu-popover .message-view .message:focus { border-color: #edacb4; }
+.datemenu-popover .message .message-header, .datemenu-popover .message .event-time { color: #d5c8cd; }
+
+/* The desktop authentication agent supplies the field and runs the action. */
+.modal-dialog.prompt-dialog {
+  background-color: #211b20; color: #f6e9e9;
+}
+.prompt-dialog .message-dialog-title { color: #fff1ee; }
+.prompt-dialog .message-dialog-description, .prompt-dialog .prompt-dialog-info-label {
+  color: #ddcdd0;
+}
+.prompt-dialog .polkit-dialog-user-label { color: #fac8bf; }
+.prompt-dialog .polkit-dialog-user-root-label, .prompt-dialog .prompt-dialog-error-label {
+  color: #ff9d98;
+}
+.prompt-dialog .prompt-dialog-password-entry {
+  background-color: #171417; color: #fff2f0;
+  border: 1px solid #805462; caret-color: #ffe1dc;
+  selection-background-color: #923547; selected-color: #fff5f4;
+}
+.prompt-dialog .prompt-dialog-password-entry:focus {
+  border-color: #f48e91; box-shadow: inset 0 0 0 1px #f48e91;
+}
+.prompt-dialog .modal-dialog-button { background-color: #423038; color: #f6e9e9; }
+.prompt-dialog .modal-dialog-button:hover { background-color: #593945; }
+.prompt-dialog .modal-dialog-button:last-child { background-color: #983347; color: #fff5f4; }
+.prompt-dialog .modal-dialog-button:last-child:hover { background-color: #ab4054; }
+.prompt-dialog .modal-dialog-button:focus { box-shadow: inset 0 0 0 2px #f49a99; }
+.prompt-dialog .modal-dialog-button:insensitive,
+.prompt-dialog .modal-dialog-button:last-child:insensitive { background-color: #352b30; color: #baaaaf; }

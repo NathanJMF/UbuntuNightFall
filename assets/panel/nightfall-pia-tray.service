@@ -1,0 +1,15 @@
+[Unit]
+Description=Nightfall colours for the Private Internet Access tray icon
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.local/libexec/nightfall-pia-tray.py
+ExecStopPost=/usr/bin/python3 %h/.local/libexec/nightfall-pia-tray.py --clear
+Restart=on-failure
+RestartSec=3
+RuntimeDirectory=nightfall-pia-tray
+RuntimeDirectoryMode=0700
+
+[Install]
+WantedBy=graphical-session.target

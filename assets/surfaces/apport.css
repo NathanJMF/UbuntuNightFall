@@ -1,0 +1,16 @@
+@import url("file:///usr/share/themes/Yaru-red-dark/gtk-3.0/gtk.css");
+window.background, dialog.background, messagedialog.background {
+  background-color: #211b20; color: #f6e9e9;
+}
+window headerbar, window .titlebar {
+  background-image: none; background-color: #291f25; color: #f6e9e9;
+}
+window button {
+  background-image: none; background-color: #45303a; color: #faeff2; border-color: #744953;
+}
+window button:hover { background-image: none; background-color: #603847; }
+window button.default { background-image: none; background-color: #993044; color: #fff5f4; }
+window button:focus { outline-color: #f5989a; }
+window button:disabled { color: #b4a2a9; background-color: #33292f; }
+window treeview.view, window textview text { background-color: #191619; color: #f6e9e9; }
+window treeview.view:selected { background-color: #903246; color: #fff5f4; }
