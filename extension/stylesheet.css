@@ -1,3 +1,11 @@
+/* Quick Settings nests each SystemIndicator inside the panel button's indicator box. */
+#panel .panel-status-indicators-box > .panel-status-indicators-box StIcon {
+  color: #f07a84;
+}
+#panel .panel-status-indicators-box > .panel-status-indicators-box StIcon.privacy-indicator {
+  color: #f2d3a0;
+}
+
 /* Use the thermal selector’s muted ruby around each popup. */
 .popup-menu-content, .quick-toggle-menu, .modal-dialog.prompt-dialog {
   border: 2px solid #794752;
