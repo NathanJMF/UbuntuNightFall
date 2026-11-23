@@ -1,6 +1,6 @@
 /* Quick Settings nests each SystemIndicator inside the panel button's indicator box. */
 #panel .panel-status-indicators-box > .panel-status-indicators-box StIcon {
-  color: #f07a84;
+  color: #c84a40;
 }
 #panel .panel-status-indicators-box > .panel-status-indicators-box StIcon.privacy-indicator {
   color: #f2d3a0;
