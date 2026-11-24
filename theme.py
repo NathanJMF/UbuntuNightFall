@@ -114,7 +114,9 @@ class Desktop:
         pictures = Path(run('xdg-user-dir', 'PICTURES')) / 'backgrounds'
         for picture in (ASSETS / 'wallpapers').glob('[0-9]*.png'):
             self.file(pictures / picture.name, picture.read_bytes())
-        self.panorama(pictures / '10-nightfall-panorama.png', 'Nightfall Panorama')
+        panorama = ASSETS / 'wallpapers/nightfall-original-scale-6200x1920.png'
+        self.file(pictures / panorama.name, panorama.read_bytes())
+        self.panorama(pictures / panorama.name, 'Nightfall Panorama · Original Scale')
         self.tree(ROOT / 'extension', DATA / 'gnome-shell/extensions' / UUID)
         self.file(DATA / 'org.gnome.Ptyxis/palettes/Nightfall.palette', (ASSETS / 'terminal/Nightfall.palette').read_bytes())
         for version in ('3','4'):
