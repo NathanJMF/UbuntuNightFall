@@ -4,6 +4,8 @@ A black-and-red theme for Ubuntu GNOME 50. It includes the desktop, lock and sig
 
 ![Calendar and example notifications](docs/calendar-preview.png)
 
+![Nightfall Quick Settings open above the UbuntuBaseSetup taskbar](docs/quick-settings-preview.png)
+
 Run `./install` in your graphical session and sign in again. Ubuntu asks for administrator approval for theme dependencies and the shared sign-in screen. The selected wallpaper and five alternatives are in your Pictures folder under `backgrounds`.
 
 For one continuous background across monitors, select **Nightfall Panorama · Original Scale** in Settings → Appearance. The included 6200 × 1920 image fits a portrait display to the left of two QHD monitors, with the sun on the middle screen. To export a copy for another arrangement, pass its combined width and height, including any vertical offsets.
