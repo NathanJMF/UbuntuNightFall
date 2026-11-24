@@ -1,9 +1,10 @@
 import Clutter from 'gi://Clutter';
-import Cogl from 'gi://Cogl';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+
+import {NightfallTray} from './tray.js';
 
 const effectName = 'nightfall-white-quick-status';
 const targetIcon = /^(network-wireless|nm-signal|nm-device-wireless|audio-volume|audio-headphones|audio-headset|battery)(-|$)/;
@@ -21,28 +22,10 @@ function recolour(icon) {
     }
 }
 
-const legacyShieldEffect = 'nightfall-bitwarden-shield';
-
-function styleLegacyShield(container, enabled) {
-    const button = container.get_child?.();
-    if (!button?.has_style_class_name?.('tray-icon')) return;
-    const icon = button.icon;
-    if (!/^bitwarden(?:-app)?$/i.test(icon?.wm_class ?? '')) return;
-    if (enabled && !icon.get_effect(legacyShieldEffect)) {
-        const [, ruby] = Cogl.Color.from_string('#f07a84');
-        icon.add_effect_with_name(legacyShieldEffect, new Clutter.ColorizeEffect({tint: ruby}));
-    } else if (!enabled) {
-        icon.remove_effect_by_name(legacyShieldEffect);
-    }
-}
-
 export default class NightfallPopups extends Extension {
     enable() {
-        this.panelBoxes = [Main.panel._leftBox, Main.panel._centerBox, Main.panel._rightBox];
-        this.panelSignals = this.panelBoxes.map(box => {
-            for (const child of box.get_children()) styleLegacyShield(child, true);
-            return box.connect('child-added', (_box, child) => styleLegacyShield(child, true));
-        });
+        this.tray = new NightfallTray();
+        this.tray.enable();
         this.actors = new Map();
         this.menu = Main.panel.statusArea.quickSettings.menu;
         this.toggle = this.menu.connect('open-state-changed', (_menu, open) => {
@@ -85,10 +68,8 @@ export default class NightfallPopups extends Extension {
     }
 
     disable() {
-        this.panelBoxes.forEach((box, index) => {
-            box.disconnect(this.panelSignals[index]);
-            for (const child of box.get_children()) styleLegacyShield(child, false);
-        });
+        this.tray.disable();
+        this.tray = null;
         this.menu.disconnect(this.toggle);
         this.clear();
         this.menu = null;

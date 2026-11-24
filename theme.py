@@ -25,6 +25,7 @@ UUID = 'nightfall-popups@ubuntu-nightfall.local'
 ASSETS = ROOT / 'assets'
 THEME = DATA / 'ubuntu-nightfall'
 ICON_NAME = 'Nightfall-Ruby'
+TRAY_SETTING = '/org/gnome/shell/extensions/appindicator/custom-icons'
 ALIASES = {
     'antigravity': 'nightfall-antigravity', 'bitwarden_bitwarden': 'nightfall-bitwarden',
     'chromium_chromium': 'nightfall-chromium', 'chatgpt': 'chatgpt',
@@ -137,6 +138,37 @@ class Desktop:
         self.file(DATA / 'gnome-background-properties' / (picture.stem + '.xml'),
                   ElementTree.tostring(catalog, encoding='utf-8', xml_declaration=True))
 
+    def tray_mappings(self):
+        settings = Gio.Settings.new('org.gnome.shell.extensions.appindicator')
+        custom = settings.get_value('custom-icons').unpack()
+        parts = {'chrome_status_icon_1':'chatgpt','Bitwarden_status_icon_1':'bitwarden'}
+        mapped = [t for t in custom if t[0] not in parts]
+        for name, art in parts.items():
+            mapped.append((name, str(THEME / 'panel' / (art+'.png')), str(THEME / 'panel' / (art+'-attention.png'))))
+        antigravity = 'Antigravity_status_icon_1'
+        if not any(row[0] == antigravity for row in mapped):
+            icon = DATA / 'icons' / ICON_NAME / 'scalable/apps/nightfall-antigravity.png'
+            mapped.append((antigravity, str(icon), str(THEME / 'panel/antigravity-attention.png')))
+        self.setting(TRAY_SETTING, GLib.Variant('a(sss)',mapped).print_(True))
+
+    def restore_tray_mappings(self, entry):
+        # Discord and PIA update the same list at runtime. Restore just the static
+        # rows that still point at our artwork, even if other apps changed it.
+        settings = Gio.Settings.new('org.gnome.shell.extensions.appindicator')
+        current = settings.get_value('custom-icons').unpack()
+        installed = GLib.Variant.parse(None, entry['installed'], None, None).unpack()
+        old = GLib.Variant.parse(None, entry['old'], None, None).unpack() if entry['old'] else []
+        icons = {str(THEME / 'panel' / (name+'.png')) for name in ('bitwarden','chatgpt')}
+        icons.add(str(DATA / 'icons' / ICON_NAME / 'scalable/apps/nightfall-antigravity.png'))
+        ids = {row[0] for row in installed if row[1] in icons and row in current}
+        if ids:
+            rows = [row for row in current if row[0] not in ids] + [row for row in old if row[0] in ids]
+            if not rows and not entry['old']:
+                settings.reset('custom-icons')
+            else:
+                settings.set_value('custom-icons', GLib.Variant('a(sss)', rows))
+            Gio.Settings.sync()
+
     def install(self):
         self.tree(ASSETS / 'icons', DATA / 'icons' / ICON_NAME)
         self.retire_replaced_icons()
@@ -197,17 +229,12 @@ class Desktop:
             if profile:
                 self.string('/org/gnome/Ptyxis/Profiles/' + profile + '/palette', 'Nightfall')
         if schema.lookup('org.gnome.shell.extensions.appindicator', True):
-            settings = Gio.Settings.new('org.gnome.shell.extensions.appindicator')
-            custom = settings.get_value('custom-icons').unpack()
-            parts = {'chrome_status_icon_1':'chatgpt','Bitwarden_status_icon_1':'bitwarden'}
-            mapped = [t for t in custom if t[0] not in parts]
-            for name, art in parts.items():
-                mapped.append((name, str(THEME / 'panel' / (art+'.png')), str(THEME / 'panel' / (art+'-attention.png'))))
-            self.setting('/org/gnome/shell/extensions/appindicator/custom-icons', GLib.Variant('a(sss)',mapped).print_(True))
+            self.tray_mappings()
             unit = (ASSETS / 'panel/nightfall-pia-tray.service').read_text().replace('%h/.local/libexec/nightfall-pia-tray.py', '"'+str(THEME / 'panel/nightfall-pia-tray.py')+'"')
             self.file(CONFIG / 'systemd/user/nightfall-pia-tray.service', unit.encode())
             run('systemctl','--user','daemon-reload')
-            run('systemctl','--user','enable','--now','nightfall-pia-tray.service')
+            run('systemctl','--user','enable','nightfall-pia-tray.service')
+            run('systemctl','--user','restart','nightfall-pia-tray.service')
         shell = Gio.Settings.new('org.gnome.shell')
         for key, want in [('enabled-extensions',True),('disabled-extensions',False)]:
             items = shell.get_strv(key)
@@ -232,6 +259,10 @@ class Desktop:
                 shell.set_strv(key, [*items, UUID] if included else [i for i in items if i != UUID])
         Gio.Settings.sync()
         for path, entry in self.record['settings'].items():
+            if path == TRAY_SETTING and Gio.SettingsSchemaSource.get_default().lookup(
+                    'org.gnome.shell.extensions.appindicator', True):
+                self.restore_tray_mappings(entry)
+                continue
             installed = GLib.Variant.parse(None, entry['installed'], None, None)
             current = run('dconf','read',path)
             if current and GLib.Variant.parse(installed.get_type(), current, None, None).equal(installed):

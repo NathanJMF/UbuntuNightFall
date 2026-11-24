@@ -1,5 +1,8 @@
-"""Recolour the VPN's live lock artwork while keeping its status badges."""
+"""Theme live PIA and Discord tray artwork without replacing their state badges."""
 import hashlib
+import os
+import re
+import stat
 from pathlib import Path
 import signal
 import sys
@@ -43,18 +46,26 @@ def rendered(pixmaps, directory):
     return str(path)
 
 
-def update_mapping(settings, paths=None):
+def update_mapping(settings, item_id, paths=None):
     rows = settings.get_value('custom-icons').unpack()
-    ours = lambda row: row[0] == ITEM_ID and Path(row[1]).parent == STORE
+    if paths and [row for row in rows if row[0] == item_id] == [(item_id, *paths)]:
+        return
+    ours = lambda row: row[0] == item_id and Path(row[1]).parent == STORE
     new = [row for row in rows if not ours(row)]
-    if paths and not any(row[0] == ITEM_ID for row in new):
-        new.append((ITEM_ID, *paths))
+    if paths and not any(row[0] == item_id for row in new):
+        new.append((item_id, *paths))
     if new != rows:
         if not settings.set_value('custom-icons', GLib.Variant('a(sss)', new)):
             raise RuntimeError('GNOME did not accept the tray icon mapping')
 
 
 class PiaTray:
+    item_id = ITEM_ID
+    prefix = 'pia'
+
+    def matches_executable(self, executable):
+        return executable == Path('/opt/piavpn/bin/pia-client')
+
     def __init__(self):
         self.bus = Gio.bus_get_sync(Gio.BusType.SESSION)
         self.settings = Gio.Settings.new('org.gnome.shell.extensions.appindicator')
@@ -77,10 +88,10 @@ class PiaTray:
                 pid = self.call('org.freedesktop.DBus', '/org/freedesktop/DBus',
                                 'org.freedesktop.DBus', 'GetConnectionUnixProcessID',
                                 GLib.Variant('(s)', (service,)))
-                if Path(f'/proc/{pid}/exe').resolve() != Path('/opt/piavpn/bin/pia-client'):
+                if not self.matches_executable(Path(f'/proc/{pid}/exe').resolve()):
                     continue
                 if self.call(service, path, PROPERTIES, 'Get',
-                             GLib.Variant('(ss)', (ITEM, 'Id'))) == ITEM_ID:
+                             GLib.Variant('(ss)', (ITEM, 'Id'))) == self.item_id:
                     return service, path
             except (GLib.Error, OSError):
                 continue
@@ -100,14 +111,14 @@ class PiaTray:
         self.pending = 0
         try:
             paths = self.render_current(STORE) if self.source else None
-            update_mapping(self.settings, paths)
+            update_mapping(self.settings, self.item_id, paths)
             current = set(paths or ())
-            for old in sorted(STORE.glob('pia-*.png'), key=lambda p: p.stat().st_mtime,
+            for old in sorted(STORE.glob(f'{self.prefix}-*.png'), key=lambda p: p.stat().st_mtime,
                               reverse=True)[16:]:
                 if str(old) not in current:
                     old.unlink(missing_ok=True)
         except (GLib.Error, OSError, ValueError):
-            update_mapping(self.settings)
+            update_mapping(self.settings, self.item_id)
         return GLib.SOURCE_REMOVE
 
     def schedule(self, *unused):
@@ -135,14 +146,79 @@ class PiaTray:
                     '/org/freedesktop/DBus', service, Gio.DBusSignalFlags.NONE, self.rescan))
         self.schedule()
 
-    def run(self):
+    def watch(self):
         STORE.mkdir(mode=0o700, exist_ok=True)
-        update_mapping(self.settings)
+        update_mapping(self.settings, self.item_id)
         self.bus.signal_subscribe(WATCHER, WATCHER, None, '/StatusNotifierWatcher', None,
                                   Gio.DBusSignalFlags.NONE, self.rescan)
         Gio.bus_watch_name_on_connection(self.bus, WATCHER, Gio.BusNameWatcherFlags.NONE,
                                          self.rescan, self.rescan)
+
+
+class DiscordTray(PiaTray):
+    item_id = 'discord_status_icon_1'
+    prefix = 'discord'
+
+    def matches_executable(self, executable):
+        return executable.name.lower() == 'discord'
+
+    def render_current(self, directory):
+        props = self.call(*self.source, PROPERTIES, 'GetAll', GLib.Variant('(s)', (ITEM,)))
+        if props.get('Status') != 'Active' or props.get('OverlayIconName') or props.get('OverlayIconPixmap'):
+            return None
+        # Electron supplies its changing icon as a named PNG in a private temporary directory.
+        folder = Path(props.get('IconThemePath') or '')
+        name = props.get('IconName') or ''
+        if folder.parent != Path('/tmp') or not folder.name.startswith('org.chromium.Chromium.'):
+            return None
+        if not re.fullmatch(r'status_icon_[0-9]+', name):
+            return None
+        parent = os.open(folder, os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            info = os.fstat(parent)
+            if info.st_uid != os.getuid() or info.st_mode & 0o077:
+                return None
+            fd = os.open(name + '.png', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+            with os.fdopen(fd, 'rb') as source:
+                info = os.fstat(source.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_size > 1024 * 1024:
+                    return None
+                with Image.open(source, formats=['PNG']) as image:
+                    if max(image.size) > 256:
+                        return None
+                    icon = image.convert('RGBA')
+        finally:
+            os.close(parent)
+        digest = hashlib.sha256(str(icon.size).encode('ascii') + icon.tobytes()).hexdigest()[:24]
+        path = directory / f'discord-{digest}.png'
+        if not path.exists():
+            # Discord draws its glyph in white and sends coloured voice and unread badges.
+            icon.putdata([(round(r * 200/255), round(g * 74/255), round(b * 64/255), a)
+                          if max(r, g, b) - min(r, g, b) < 38 else (r, g, b, a)
+                          for r, g, b, a in icon.getdata()])
+            tmp = path.with_suffix('.tmp')
+            icon.save(tmp, format='PNG')
+            tmp.replace(path)
+        return str(path), str(path)
+
+
+if __name__ == '__main__':
+    trays = [PiaTray(), DiscordTray()]
+    if sys.argv[1:] == ['--clear']:
+        for tray in trays:
+            update_mapping(tray.settings, tray.item_id)
+        Gio.Settings.sync()
+    elif len(sys.argv) == 3 and sys.argv[1] == '--preview':
+        tray = trays[0]
+        tray.source = tray.discover()
+        if not tray.source:
+            raise SystemExit('PIA has no registered tray item')
+        print(tray.render_current(Path(sys.argv[2])))
+    elif len(sys.argv) == 1:
+        for tray in trays:
+            tray.watch()
         loop = GLib.MainLoop()
+
         def stop(*unused):
             loop.quit()
             return GLib.SOURCE_REMOVE
@@ -152,21 +228,8 @@ class PiaTray:
         try:
             loop.run()
         finally:
-            update_mapping(self.settings)
+            for tray in trays:
+                update_mapping(tray.settings, tray.item_id)
             Gio.Settings.sync()
-
-
-if __name__ == '__main__':
-    tray = PiaTray()
-    if sys.argv[1:] == ['--clear']:
-        update_mapping(tray.settings)
-        Gio.Settings.sync()
-    elif len(sys.argv) == 3 and sys.argv[1] == '--preview':
-        tray.source = tray.discover()
-        if not tray.source:
-            raise SystemExit('PIA has no registered tray item')
-        print(tray.render_current(Path(sys.argv[2])))
-    elif len(sys.argv) == 1:
-        tray.run()
     else:
         raise SystemExit('Expected no options, --clear, or --preview DIRECTORY')

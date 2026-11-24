@@ -1,5 +1,5 @@
 [Unit]
-Description=Nightfall colours for the Private Internet Access tray icon
+Description=Nightfall colours for Private Internet Access and Discord tray icons
 PartOf=graphical-session.target
 
 [Service]
