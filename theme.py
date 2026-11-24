@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from xml.etree import ElementTree
 
 import gi
 gi.require_version('GioUnix','2.0')
@@ -97,6 +98,15 @@ class Desktop:
     def string(self, path, value):
         self.setting(path, GLib.Variant('s', value).print_(True))
 
+    def panorama(self, picture, name):
+        catalog = ElementTree.Element('wallpapers')
+        item = ElementTree.SubElement(catalog, 'wallpaper')
+        for tag, value in [('name', name), ('filename', str(picture)),
+                           ('filename-dark', str(picture)), ('options', 'spanned')]:
+            ElementTree.SubElement(item, tag).text = value
+        self.file(DATA / 'gnome-background-properties' / (picture.stem + '.xml'),
+                  ElementTree.tostring(catalog, encoding='utf-8', xml_declaration=True))
+
     def install(self):
         self.tree(ASSETS / 'icons', DATA / 'icons' / ICON_NAME)
         self.tree(ASSETS / 'panel', THEME / 'panel')
@@ -104,6 +114,7 @@ class Desktop:
         pictures = Path(run('xdg-user-dir', 'PICTURES')) / 'backgrounds'
         for picture in (ASSETS / 'wallpapers').glob('[0-9]*.png'):
             self.file(pictures / picture.name, picture.read_bytes())
+        self.panorama(pictures / '10-nightfall-panorama.png', 'Nightfall Panorama')
         self.tree(ROOT / 'extension', DATA / 'gnome-shell/extensions' / UUID)
         self.file(DATA / 'org.gnome.Ptyxis/palettes/Nightfall.palette', (ASSETS / 'terminal/Nightfall.palette').read_bytes())
         for version in ('3','4'):

@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Extend the original Nightfall scene to a combined monitor canvas."""
+import argparse
+import math
+import os
+from pathlib import Path
+import random
+import tempfile
+
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
+
+SOURCE = Path(__file__).resolve().parent / 'assets/wallpapers/08-nightfall.png'
+SKY = (18, 16, 18)
+# Back to front: original fill and the height at the left and right edges.
+RIDGES = (
+    ((109, 50, 56), 1044, 1035),
+    ((73, 39, 47), 1153, 1157),
+    ((45, 32, 39), 1312, 1192),
+    ((27, 24, 29), 1347, 1382),
+    ((17, 16, 19), 1577, 1561),
+)
+# Silhouette detail in original-image pixels, from long slopes down to rock edges.
+SCALES = ((1430, 74), (570, 35), (185, 13), (70, 6), (28, 3.5), (12, 2))
+
+
+def ridgeline(width, start, rng, summit, relief):
+    offsets = [0.0] * width
+    for spacing, amplitude in SCALES:
+        # Vary each ridge independently, starting exactly at the original edge.
+        knots = [0.0] + [rng.uniform(-amplitude, amplitude)
+                         for _ in range(math.ceil(width / spacing))]
+        for x in range(width):
+            i, rem = divmod(x, spacing)
+            t = rem / spacing
+            offsets[x] += knots[i] + (knots[i + 1] - knots[i]) * t * t * (3 - 2 * t)
+    # Give each new slope a distinct main peak, with the foothills offset in depth.
+    foot = math.exp(-((0 - summit) / 360) ** 2)
+    return [(x, round(start + dy - relief * (math.exp(-((x - summit) / 360) ** 2) - foot)))
+            for x, dy in enumerate(offsets)]
+
+
+def wing(source, width, left):
+    height = source.height
+    edge_x = 0 if left else source.width - 1
+    horizon = RIDGES[0][1 if left else 2]
+    # Continue the glow already present in the sky at this edge. Smooth out grain
+    # before extending it so a single column does not become horizontal stripes.
+    strip = source.crop((edge_x, 0, edge_x + 1, horizon - 3))
+    strip = strip.filter(ImageFilter.BoxBlur(5))
+    edge = Image.new('RGB', (1, height), strip.getpixel((0, strip.height - 1)))
+    edge.paste(strip)
+    fade = Image.new('L', (width, 1))
+    fade.putdata([round(255 * math.exp(-x / 305)) for x in range(width)])
+    sky = Image.new('RGB', (width, height), SKY)
+    sky.paste(edge.resize(sky.size, Image.Resampling.NEAREST), mask=fade.resize(sky.size))
+    draw = ImageDraw.Draw(sky)
+    for index, (color, left_y, right_y) in enumerate(RIDGES):
+        rng = random.Random(100 * index + (31 if left else 67))
+        summit = (1630 if left else 930) + index * 277
+        points = ridgeline(width, left_y if left else right_y, rng, summit, 125 - 8 * index)
+        draw.polygon(points + [(width - 1, height), (0, height)], fill=color)
+    # The original uses a quiet, one-level dither on its flat layers.
+    grain = Image.frombytes('L', sky.size, random.Random(edge_x).randbytes(width * height))
+    grain = grain.point([127 if v < 45 else 129 if v >= 211 else 128 for v in range(256)])
+    sky = ImageChops.add(sky, grain.convert('RGB'), offset=-128)
+    return sky.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if left else sky
+
+
+def render(width, height):
+    with Image.open(SOURCE) as source:
+        # Scale both axes equally. Keep the sun at the original horizontal fraction
+        # of the combined display, growing the terrain on either side as needed.
+        span = max(1, round(width * source.height / height))
+        left = round((span - source.width) * (1892 / source.width))
+        scene = Image.new('RGB', (span, source.height))
+        if left > 0:
+            scene.paste(wing(source, left, True), (0, 0))
+        scene.paste(source, (left, 0))
+        right = left + source.width
+        if right < span:
+            scene.paste(wing(source, span - right, False), (right, 0))
+        return scene.resize((width, height), Image.Resampling.LANCZOS)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('size', metavar='WIDTHxHEIGHT', help='bounding rectangle of all monitors')
+    parser.add_argument('output', type=Path, help='new PNG file')
+    args = parser.parse_args()
+    try:
+        width, height = map(int, args.size.lower().split('x'))
+    except ValueError:
+        parser.error('use WIDTHxHEIGHT, for example 5120x1440')
+    if min(width, height) < 1:
+        parser.error('width and height must be positive')
+    if args.output.suffix.lower() != '.png':
+        parser.error('choose a .png output filename')
+    if args.output.exists():
+        parser.exit(1, f'File already exists: {args.output}\n')
+    if width * height > Image.MAX_IMAGE_PIXELS or width > 24 * height:
+        parser.error('canvas exceeds the renderer memory budget')
+    image = render(width, height)
+    with tempfile.NamedTemporaryFile(dir=args.output.parent, suffix='.png') as temp:
+        image.save(temp, format='PNG')
+        temp.flush()
+        os.fchmod(temp.fileno(), 0o644)
+        try:
+            os.link(temp.name, args.output)
+        except FileExistsError:
+            parser.exit(1, f'File already exists: {args.output}\n')
+    print(args.output)
+
+
+if __name__ == '__main__':
+    main()
