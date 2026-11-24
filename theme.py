@@ -87,6 +87,36 @@ class Desktop:
             if file.is_file():
                 self.file(dst / file.relative_to(src), file.read_bytes())
 
+    def retire_replaced_icons(self):
+        source = ASSETS / 'icons'
+        target = DATA / 'icons' / ICON_NAME
+        files = self.record['files']
+        changed = False
+        for asset in source.glob('*/status/*-symbolic.symbolic.png'):
+            replacement = target / asset.relative_to(source)
+            legacy = replacement.with_name(asset.name.removesuffix('.symbolic.png') + '.png')
+            entry = files.get(str(legacy))
+            if entry is None or asset.with_name(legacy.name).exists():
+                continue
+            if replacement.is_symlink() or not replacement.is_file() or replacement.read_bytes() != asset.read_bytes():
+                continue
+            if legacy.is_symlink() or (legacy.exists() and not legacy.is_file()):
+                continue
+            original = b64decode(entry['old']) if entry['old'] is not None else None
+            current = legacy.read_bytes() if legacy.is_file() else None
+            if current != original:
+                if current is None or sha256(current).hexdigest() != entry['installed']:
+                    continue
+                if original is None:
+                    legacy.unlink()
+                else:
+                    atomic(legacy, original, entry['mode'])
+            del files[str(legacy)]
+            changed = True
+        if changed:
+            os.utime(target)
+            self.save()
+
     def setting(self, path, value):
         settings = self.record['settings']
         if path not in settings:
@@ -109,6 +139,7 @@ class Desktop:
 
     def install(self):
         self.tree(ASSETS / 'icons', DATA / 'icons' / ICON_NAME)
+        self.retire_replaced_icons()
         self.tree(ASSETS / 'panel', THEME / 'panel')
         self.tree(ASSETS / 'surfaces', THEME / 'surfaces')
         pictures = Path(run('xdg-user-dir', 'PICTURES')) / 'backgrounds'
