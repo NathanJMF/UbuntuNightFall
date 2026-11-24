@@ -12,7 +12,7 @@ For one continuous background across monitors, select **Nightfall Panorama** in 
 ./span-wallpaper 7680x1440 nightfall-triple.png
 ```
 
-To keep the sun on a particular monitor, pass its dimensions and its offset from the canvas's top-left corner. This example places it on the middle QHD screen of a 6200 × 1920 desktop with a portrait display on the left.
+To keep the sun on a particular monitor, pass its dimensions and its offset from the canvas's top-left corner. The primary screen uses the original wallpaper at GNOME's normal zoom scale. Sky and foreground extend into the extra vertical space on other monitors. This example places the sun on the middle QHD screen of a 6200 × 1920 desktop with a portrait display on the left.
 
 ```sh
 ./span-wallpaper 6200x1920 nightfall-primary.png --primary 2560x1440+1080+217

@@ -67,18 +67,59 @@ def wing(source, width, left):
     return sky.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if left else sky
 
 
+def primary_view(source, width, height, primary):
+    pw, ph, x, y = primary
+    scale = max(pw / source.width, ph / source.height)
+    sw, sh = round(source.width * scale), round(source.height * scale)
+    # Start with the same centered cover crop GNOME uses for a single monitor.
+    left = x + pw // 2 - sw // 2
+    top = y + ph // 2 - sh // 2
+    # Only pan if the normal crop would clip the sun (e.g. a portrait primary).
+    if pw >= math.ceil(188 * scale):
+        left = max(x - math.floor(1798 * scale),
+                   min(left, x + pw - math.ceil(1986 * scale)))
+    if ph >= math.ceil(188 * scale):
+        top = max(y - math.floor(826 * scale),
+                  min(top, y + ph - math.ceil(1014 * scale)))
+
+    strip = Image.new('RGB', (width, sh))
+    for edge, length, on_left in [(0, left, True), (left + sw, width - left - sw, False)]:
+        if length > 0:
+            extension = wing(source, max(1, round(length / scale)), on_left)
+            strip.paste(extension.resize((length, sh), Image.Resampling.LANCZOS), (edge, 0))
+    strip.paste(source.resize((sw, sh), Image.Resampling.LANCZOS), (left, 0))
+    result = Image.new('RGB', (width, height), SKY)
+    result.paste(strip, (0, top))
+
+    bottom = top + sh
+    if bottom < height:
+        # Continue the two nearest silhouettes where they cross the old bottom
+        # edge. Distance from each crossing gives the valleys a gentle taper.
+        pixels = strip.load()
+        distances = []
+        limit = max(1, round(160 * scale))
+        distance = limit
+        for i in range(width):
+            red = pixels[i, sh - 1][0]
+            distance = min(limit, distance + 1) if red > 22 else 0
+            distances.append(distance)
+        for i in range(width - 2, -1, -1):
+            distances[i] = min(distances[i], distances[i + 1] + 1)
+        draw = ImageDraw.Draw(result)
+        draw.rectangle((0, bottom, width - 1, height - 1), fill=RIDGES[-1][0])
+        for i, distance in enumerate(distances):
+            depth = round(distance * 0.22)
+            if depth:
+                draw.line((i, bottom, i, bottom + depth - 1), fill=RIDGES[-2][0])
+    return result
+
+
 def render(width, height, primary=None):
     with Image.open(SOURCE) as source:
-        scale = height / source.height
-        sun_x, sun_y = 1892, 920
         if primary:
-            pw, ph, x, y = primary
-            scale = min(pw / source.width, ph / source.height)
-            target_x = x + pw * sun_x / source.width
-            target_y = y + ph * sun_y / source.height
-        span = max(1, round(width / scale))
-        left = (round(target_x / scale - sun_x) if primary else
-                round((span - source.width) * (sun_x / source.width)))
+            return primary_view(source, width, height, primary)
+        span = max(1, round(width * source.height / height))
+        left = round((span - source.width) * (1892 / source.width))
         scene = Image.new('RGB', (span, source.height))
         if left > 0:
             scene.paste(wing(source, left, True), (0, 0))
@@ -86,22 +127,7 @@ def render(width, height, primary=None):
         right = left + source.width
         if right < span:
             scene.paste(wing(source, span - right, False), (right, 0))
-        if not primary:
-            return scene.resize((width, height), Image.Resampling.LANCZOS)
-
-        # Keep the sun and the ridgeline around it at the primary monitor's scale.
-        # Let the empty upper sky and the nearest foothills fill the extra height
-        # above and below an offset monitor, without seams or letterboxing.
-        edges = (0, 600, 1360, source.height)
-        rows = (0, round(target_y + (edges[1] - sun_y) * scale),
-                round(target_y + (edges[2] - sun_y) * scale), height)
-        result = Image.new('RGB', (width, height))
-        for top, bottom, y0, y1 in zip(edges, edges[1:], rows, rows[1:]):
-            if y1 > y0:
-                band = scene.resize((width, y1 - y0), Image.Resampling.LANCZOS,
-                                    box=(0, top, span, bottom))
-                result.paste(band, (0, y0))
-        return result
+        return scene.resize((width, height), Image.Resampling.LANCZOS)
 
 
 def main():
@@ -132,8 +158,10 @@ def main():
         pw, ph, x, y = primary
         if not pw or not ph or x + pw > width or y + ph > height:
             parser.error('the primary monitor must fit inside the output canvas')
-        if width / min(pw / 2560, ph / 1600) > 24 * 1600:
-            parser.error('primary monitor is too small relative to the span for the renderer memory budget')
+        scale = max(pw / 2560, ph / 1600)
+        if (width / scale > 24 * 1600 or
+                max(width, round(2560 * scale)) * round(1600 * scale) > Image.MAX_IMAGE_PIXELS):
+            parser.error('primary monitor and canvas exceed the renderer memory budget')
     image = render(width, height, primary)
     with tempfile.NamedTemporaryFile(dir=args.output.parent, suffix='.png') as temp:
         image.save(temp, format='PNG')
